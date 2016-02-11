@@ -5,7 +5,7 @@ These are the sources for the [travel map app](http://travelmap.nwalsh.com/).
 ## Requirements
 
 This travel map application runs on
-[MarkLogic 5](http://www.marklogic.com/product/marklogic-server.html). You can
+[MarkLogic 5](http://www.marklogic.com/product/marklogic-server.html) (or later). You can
 run it on an earlier release if you download and install
 the
 [REST API Library](https://github.com/marklogic/ml-rest-lib).
@@ -24,13 +24,13 @@ FIXME: add some more detail here
 I loaded the data in QueryConsole:
 
     xquery version "1.0-ml";
-    
+
     declare default function namespace "http://www.w3.org/2005/xpath-functions";
-    
+
     declare namespace air="http://nwalsh.com/ns/airports";
-    
+
     declare option xdmp:mapping "false";
-    
+
     let $airports := xdmp:document-get("/MarkLogic/travelmap/etc/airports.xml")/air:airports
     let $load := for $airport in $airports/air:airport
                  let $uri := concat("/airports/", $airport/air:id, ".xml")
@@ -47,4 +47,3 @@ privileges to the documents that you insert.
 ## Questions or problems
 
 Let [norm](mailto:ndw@nwalsh.com) know.
-
