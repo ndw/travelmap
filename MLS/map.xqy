@@ -73,10 +73,10 @@ return
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>Travel map</title>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"
             type="text/javascript">
     </script>
-    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false">
+    <script type="text/javascript" src="https://maps.google.com/maps/api/js">
     </script>
     <script src="js/TravelMap.js" type="text/javascript">
     </script>

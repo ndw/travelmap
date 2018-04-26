@@ -21,7 +21,7 @@ body {{ width: 640px;
   </head>
   <body>
   <h1>Travel map</h1>
-  <p>Welcome to <a href="http://nwalsh.com/">norm</a>'s travel map app.</p>
+  <p>Welcome to <a href="https://nwalsh.com/">norm</a>'s travel map app.</p>
   <p>Enter a set of flights (for example, IAD-ORD,ORD-SFO,SFO-IAD):</p>
   <form action="/map" method="get">
     <input type="hidden" name="input" value="true"/>
