@@ -3,9 +3,6 @@ xquery version "1.0-ml";
 import module namespace rest="http://marklogic.com/appservices/rest"
        at "/MarkLogic/appservices/utils/rest.xqy";
 
-import module namespace ro="http://travelmap.nwalsh.com/ns/ro"
-       at "restopts.xqy";
-
 declare default function namespace "http://www.w3.org/2005/xpath-functions";
 
 declare namespace air="http://nwalsh.com/ns/airports";
@@ -41,13 +38,31 @@ declare function local:add-to-map(
      else <air:route>{string($dep/air:iata_code)},{string($arr/air:iata_code)}</air:route>)
 };
 
-let $request := $ro:OPTIONS/rest:request[@endpoint='/map.xqy']
-let $params  := rest:process-request($request)
-let $routes  := map:get($params, "routes")
-let $routes := tokenize($routes, "\s*,\s*")
-let $data   := for $route in $routes
-               return
-                 local:add-to-map($route)
+let $params   := map:map()
+let $_        := map:put($params, "routes", xdmp:get-request-field("routes"))
+let $_        := map:put($params, "input", xdmp:get-request-field("input"))
+let $_        := map:put($params, "width",
+                   if (xdmp:get-request-field("width"))
+                   then xdmp:get-request-field("width")
+                   else "100%")
+let $_        := map:put($params, "height",
+                   if (xdmp:get-request-field("height"))
+                   then xdmp:get-request-field("height")
+                   else "65%")
+
+let $_ := xdmp:log($params)
+
+let $routes   := map:get($params, "routes")
+let $routes   := tokenize($routes, "\s*,\s*")
+let $data     := for $route in $routes
+                 return
+                   local:add-to-map($route)
+let $iata     := distinct-values($data[self::air:airport]/air:iata_code/data())
+let $airports := for $code in $iata
+                 return ($data[self::air:airport][air:iata_code=$code])[1]
+let $airports := for $airport in $airports
+                 order by $airport/air:name
+                 return $airport
 
 let $miles  := for $pair in $data/self::air:route/string()
                let $dep := substring-before($pair,",")
@@ -68,48 +83,54 @@ let $dist   := sum($miles)
 let $width  := map:get($params, "width")
 let $height := map:get($params, "height")
 
+let $_ := xdmp:log(("w",$width,"h",$height))
+
 return
 (xdmp:set-response-content-type("text/html"),
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta charset="utf-8" />
     <title>Travel map</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"
-            type="text/javascript">
-    </script>
-    <script type="text/javascript" src="https://maps.google.com/maps/api/js">
-    </script>
-    <script src="js/TravelMap.js" type="text/javascript">
-    </script>
+    <link rel="stylesheet" type="text/css" href="/css/travelmap.css" />
+    <script type="text/javascript" src="/js/jquery-3.1.1.min.js"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"
+          integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ=="
+          crossorigin=""/>
   </head>
   <body>
     <div id="routemap" class="itingrp">
       <div class="artwork" id="flightmap" style="width: {$width}; height: {$height};"></div>
-      <script type="text/javascript">
-$(document).ready(function() {{
-  mapDiv = document.getElementById('flightmap');
-  { let $codes := string-join(distinct-values($data/air:iata_code/string()), ",")
-    return
-      if ($codes = "")
-      then
-        ()
-      else
-        concat("var ", $codes, ";&#10;")
-  }
-  { for $iata in distinct-values($data/air:iata_code/string())
-    let $airport := ($data[air:iata_code = $iata])[1]
-    let $lat := xs:decimal($airport/air:latitude_deg)
-    let $long := xs:decimal($airport/air:longitude_deg)
-    return
-      concat("   ", $iata, " = new Airport(", $lat, ", ", $long,
-             ", &quot;", $iata, "&quot;);&#10;")
-  }
-  { for $pair in distinct-values($data[self::air:route]/string())
-    return
-      concat("flights.push(new Flight(", $pair, "));&#10;")
-  }
-  Plot();
-}});</script>
     </div>
+    <ul>
+      { for $airport in $airports
+        return
+          <li x-latitude="{$airport/air:latitude_deg}" x-longitude="{$airport/air:longitude_deg}"
+              id="{$airport/air:iata_code}" class="airport">
+            <span>{string($airport/air:name)}</span>
+          </li>
+      }
+      { for $route in $data[self::air:route]
+        let $dep := local:airport(substring-before($route, ","))
+        let $arr := local:airport(substring-after($route, ","))
+
+        let $lat := xs:decimal($dep/air:latitude_deg)
+        let $long := xs:decimal($dep/air:longitude_deg)
+        let $depgeo := cts:point($lat, $long)
+
+        let $lat := xs:decimal($arr/air:latitude_deg)
+        let $long := xs:decimal($arr/air:longitude_deg)
+        let $arrgeo := cts:point($lat, $long)
+
+        let $dist := cts:distance($depgeo, $arrgeo)
+        return
+          <li x-depart="{$dep/air:iata_code}" x-arrive="{$arr/air:iata_code}"
+              class="route">
+            <span class="iata">{string($dep/air:iata_code)}-{string($arr/air:iata_code)}</span>
+            { ", " }
+            <span class="miles">{round($dist)} miles</span>
+          </li>
+      }
+    </ul>
     <p>
       { round($dist) } miles in
       { count($routes) } legs along { count(distinct-values($data[self::air:route]/string())) }
@@ -154,5 +175,11 @@ $(document).ready(function() {{
       }
     </div>
   </body>
+  <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"
+          integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw=="
+          crossorigin=""/>
+  <script src="/js/Leaflet.Geodesic.js"/>
+  <script src="/js/Leaflet.MakiMarkers.js"/>
+  <script src="/js/openstreet.js"/>
 </html>
 )

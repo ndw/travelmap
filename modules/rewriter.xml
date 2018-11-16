@@ -1,0 +1,27 @@
+<rewriter xmlns="http://marklogic.com/xdmp/rewriter">
+  <match-path any-of="/">
+    <dispatch>/default.xqy</dispatch>
+  </match-path>
+
+  <match-path any-of="/map">
+    <dispatch>/map.xqy</dispatch>
+  </match-path>
+
+  <match-path any-of="/near">
+    <dispatch>/near.xqy</dispatch>
+  </match-path>
+
+  <match-path matches="^(/js/.*)$">
+    <dispatch>$1</dispatch>
+  </match-path>
+
+  <match-path matches="^(/css/.*)$">
+    <dispatch>$1</dispatch>
+  </match-path>
+
+  <match-path matches="^(/img/.*)$">
+    <dispatch>$1</dispatch>
+  </match-path>
+</rewriter>
+
+
