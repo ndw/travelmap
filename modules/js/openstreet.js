@@ -7,27 +7,16 @@ let geoSteps = 100;
 let markers = [];
 
 $(document).ready(function() {
-  let minlat = 360;
-  let minlng = 360;
-  let maxlat = -360;
-  let maxlng = -360;
-
+  let points = [];
   $("li.airport").each(function(index, li) {
     let lat = $(li).attr("x-latitude");
     let lng = $(li).attr("x-longitude");
 
-    if (lat < minlat) minlat = lat;
-    if (lat > maxlat) maxlat = lat;
-    if (lng < minlng) minlng = lng;
-    if (lng > maxlng) maxlng = lng;
+    points.push([lat,lng]);
   });
 
-  let ne = L.latLng(maxlat, maxlng);
-  let sw = L.latLng(minlat, minlng);
-  bounds = L.latLngBounds(ne, sw);
-
   let map = L.map("flightmap").setView([0,0], 8);
-  map.fitBounds(bounds, { "padding": [10,10] });
+  map.fitBounds(points);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: 'map data © OpenStreetMap contributors',
