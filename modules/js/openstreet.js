@@ -24,6 +24,7 @@ $(document).ready(function() {
     MaxZoom: 18
   }).addTo(map);
 
+  points = {};
   $("li.route").each(function(index, li) {
     let depiata = $(li).attr("x-depart");
     let arriata = $(li).attr("x-arrive");
@@ -33,7 +34,14 @@ $(document).ready(function() {
     let slatlng = L.latLng($(dep).attr("x-latitude"), $(dep).attr("x-longitude"));
     let elatlng = L.latLng($(arr).attr("x-latitude"), $(arr).attr("x-longitude"));
 
-    createPoint(map, slatlng.lat, slatlng.lng, depiata, $(dep).html());
+    if (!(depiata in points)) {
+      createPoint(map, slatlng.lat, slatlng.lng, depiata, depiata + ": " + $(dep).html());
+      points[depiata] = 1;
+    }
+    if (!(arriata in points)) {
+      createPoint(map, elatlng.lat, elatlng.lng, arriata, arriata + ": " + $(arr).html());
+      points[arriata] = 1;
+    }
     createLine(map, slatlng, elatlng, lineColor, lineWidth, lineOpacity);
   });
 
